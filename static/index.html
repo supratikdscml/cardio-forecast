@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HD Prediction Forecasting Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="app-header">
+            <div class="header-logo">
+                <span class="logo-icon">❤</span>
+                <div class="logo-text">
+                    <h1>HD Prediction Forecasting Engine</h1>
+                    <p>Strength-weighted ensemble · Friedman / Wilcoxon validated</p>
+                </div>
+            </div>
+            <nav class="app-nav">
+                <button class="nav-btn active" id="btn-calculator">Risk Forecast</button>
+                <button class="nav-btn" id="btn-analytics">Model Analytics</button>
+            </nav>
+        </header>
+
+        <main class="app-content">
+            <section id="tab-calculator" class="tab-panel active">
+                <p class="intro-text">
+                    Enter clinical parameters below. The engine runs every tuned model (Logistic Regression,
+                    Random Forest, XGBoost, SVM) and returns a <strong>strength-weighted ensemble risk score</strong>
+                    with per-model breakdown and personal risk drivers — same logic as the notebook forecasting engine.
+                </p>
+
+                <div class="calculator-grid">
+                    <div class="glass-card form-card">
+                        <div class="card-header">
+                            <h2>Patient Clinical Data</h2>
+                            <p>All fields match the notebook's <code>collect_patient_input()</code> schema.</p>
+                        </div>
+                        <form id="risk-form" class="clinical-form">
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label for="input-age">Age (years)</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="input-age" name="Age" min="28" max="77" value="55" class="slider-input">
+                                        <span class="slider-value" id="val-age">55</span>
+                                    </div>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label>Sex</label>
+                                    <div class="toggle-group">
+                                        <label class="toggle-option">
+                                            <input type="radio" name="Sex" value="M" checked>
+                                            <span class="toggle-label">Male</span>
+                                        </label>
+                                        <label class="toggle-option">
+                                            <input type="radio" name="Sex" value="F">
+                                            <span class="toggle-label">Female</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label for="input-bp">Resting Blood Pressure (mm Hg)</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="input-bp" name="RestingBP" min="80" max="200" value="130" class="slider-input">
+                                        <span class="slider-value" id="val-bp">130</span>
+                                    </div>
+                                    <span class="field-desc">0 is treated as missing (biologically impossible)</span>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label for="input-chol">Serum Cholesterol (mg/dl)</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="input-chol" name="Cholesterol" min="85" max="603" value="240" class="slider-input">
+                                        <span class="slider-value" id="val-chol">240</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label>Fasting Blood Sugar &gt; 120 mg/dl</label>
+                                    <div class="toggle-group">
+                                        <label class="toggle-option">
+                                            <input type="radio" name="FastingBS" value="1">
+                                            <span class="toggle-label">Yes</span>
+                                        </label>
+                                        <label class="toggle-option">
+                                            <input type="radio" name="FastingBS" value="0" checked>
+                                            <span class="toggle-label">No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label>Exercise Induced Angina</label>
+                                    <div class="toggle-group">
+                                        <label class="toggle-option">
+                                            <input type="radio" name="ExerciseAngina" value="Y">
+                                            <span class="toggle-label">Yes</span>
+                                        </label>
+                                        <label class="toggle-option">
+                                            <input type="radio" name="ExerciseAngina" value="N" checked>
+                                            <span class="toggle-label">No</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label for="input-maxhr">Max Heart Rate Achieved</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="input-maxhr" name="MaxHR" min="60" max="202" value="140" class="slider-input">
+                                        <span class="slider-value" id="val-maxhr">140</span>
+                                    </div>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label for="input-oldpeak">Oldpeak (ST Depression)</label>
+                                    <div class="slider-container">
+                                        <input type="range" id="input-oldpeak" name="Oldpeak" min="-2.6" max="6.2" step="0.1" value="0.8" class="slider-input">
+                                        <span class="slider-value" id="val-oldpeak">0.8</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label for="input-chestpain">Chest Pain Type</label>
+                                    <select id="input-chestpain" name="ChestPainType" class="select-input">
+                                        <option value="TA">Typical Angina (TA)</option>
+                                        <option value="ATA">Atypical Angina (ATA)</option>
+                                        <option value="NAP">Non-Anginal Pain (NAP)</option>
+                                        <option value="ASY" selected>Asymptomatic (ASY)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group flex-1">
+                                    <label for="input-ecg">Resting ECG</label>
+                                    <select id="input-ecg" name="RestingECG" class="select-input">
+                                        <option value="Normal" selected>Normal</option>
+                                        <option value="ST">ST-T Wave Abnormality</option>
+                                        <option value="LVH">Left Ventricular Hypertrophy</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group flex-1">
+                                    <label for="input-slope">Peak Exercise ST Slope</label>
+                                    <select id="input-slope" name="ST_Slope" class="select-input">
+                                        <option value="Up">Upsloping</option>
+                                        <option value="Flat" selected>Flat</option>
+                                        <option value="Down">Downsloping</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" id="btn-demo" class="secondary-btn">Load Notebook Demo Patient</button>
+                                <button type="submit" id="btn-submit" class="primary-btn">Generate Risk Forecast</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="results-column">
+                        <div class="glass-card result-score-card">
+                            <div class="card-header centered">
+                                <h3>Heart Disease Risk Forecast</h3>
+                                <p>Weighted-ensemble probability (0–100%)</p>
+                            </div>
+                            <div class="gauge-wrapper">
+                                <svg class="risk-gauge" viewBox="0 0 100 50">
+                                    <path class="gauge-track" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke-width="8"></path>
+                                    <path class="gauge-fill" id="gauge-fill-arc" d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke-width="8" stroke-dasharray="125.6" stroke-dashoffset="125.6"></path>
+                                    <g id="gauge-needle" transform="translate(50,50) rotate(-90)">
+                                        <line x1="0" y1="0" x2="-35" y2="0" stroke-width="3" stroke-linecap="round"></line>
+                                        <circle cx="0" cy="0" r="4" fill="var(--slate-800)"></circle>
+                                    </g>
+                                </svg>
+                                <div class="gauge-labels">
+                                    <span class="percentage-value" id="res-percentage">—</span>
+                                    <span class="risk-badge" id="res-band">Awaiting Input</span>
+                                </div>
+                            </div>
+                            <div class="gauge-ranges">
+                                <span class="range-label low">Low<br>0–25%</span>
+                                <span class="range-label moderate">Moderate<br>25–50%</span>
+                                <span class="range-label high">High<br>50–75%</span>
+                                <span class="range-label very-high">Very High<br>75–100%</span>
+                            </div>
+                        </div>
+
+                        <div class="glass-card explanation-card">
+                            <div class="card-header">
+                                <h3>Top Personal Risk Drivers</h3>
+                                <p>Strength-weighted global importance × patient-specific logistic regression effect.</p>
+                            </div>
+                            <div class="drivers-container" id="drivers-list">
+                                <div class="placeholder-message">
+                                    <p>Submit patient data to see personalized drivers.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="glass-card breakdown-card">
+                            <div class="card-header">
+                                <h3>Per-Model Forecast Comparison</h3>
+                                <p>Each model's probability and its ensemble voting weight from the strength scorecard.</p>
+                            </div>
+                            <div class="models-breakdown-list" id="models-list">
+                                <div class="placeholder-message">
+                                    <p>Submit patient data to compare model forecasts.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-analytics" class="tab-panel">
+                <div class="metrics-summary-grid" id="analytics-summary">
+                    <div class="glass-card metric-card">
+                        <h4>Ensemble Method</h4>
+                        <div class="metric-val">Strength-Weighted</div>
+                        <p class="metric-desc">AUC + Brier + CV significance wins</p>
+                    </div>
+                    <div class="glass-card metric-card">
+                        <h4>Friedman Test</h4>
+                        <div class="metric-val" id="stat-friedman-p">p = —</div>
+                        <p class="metric-desc" id="stat-friedman-outcome">Loading…</p>
+                    </div>
+                    <div class="glass-card metric-card">
+                        <h4>Strongest Model</h4>
+                        <div class="metric-val" id="stat-best-model">—</div>
+                        <p class="metric-desc" id="stat-best-model-weight">Weight: —</p>
+                    </div>
+                </div>
+
+                <div class="analytics-charts-grid">
+                    <div class="glass-card chart-card flex-2">
+                        <div class="card-header">
+                            <h3>Unified Feature Importance</h3>
+                            <p>Normalized importances combined using model-strength weights.</p>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-feature-importance"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card flex-1">
+                        <div class="card-header">
+                            <h3>Test-Set Performance</h3>
+                            <p>Accuracy, recall, and F1 on the 80/20 stratified split.</p>
+                        </div>
+                        <div class="metrics-bars-container" id="model-comparison-bars">
+                            <p class="loading-placeholder">Loading…</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-charts-grid margin-top-30">
+                    <div class="glass-card chart-card flex-1">
+                        <div class="card-header">
+                            <h3>Model Weights (Strength Scorecard)</h3>
+                            <p>Composite score from test AUC, calibration, and CV significance.</p>
+                        </div>
+                        <div class="weights-list" id="model-weights-list">
+                            <p class="loading-placeholder">Loading…</p>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card flex-1">
+                        <div class="card-header">
+                            <h3>Holm-Corrected Pairwise Tests</h3>
+                            <p>Wilcoxon signed-rank post-hoc comparisons (α = 0.05).</p>
+                        </div>
+                        <div class="holm-table-wrap" id="holm-table">
+                            <p class="loading-placeholder">Loading…</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="analytics-charts-grid margin-top-30">
+                    <div class="glass-card chart-card flex-1">
+                        <div class="card-header">
+                            <h3>Feature Correlation Heatmap</h3>
+                            <p>Pearson correlations on encoded features.</p>
+                        </div>
+                        <div class="heatmap-wrapper">
+                            <div class="heatmap-scroll-container">
+                                <div id="correlation-heatmap" class="heatmap-grid">
+                                    <p class="loading-placeholder">Loading…</p>
+                                </div>
+                            </div>
+                            <div class="heatmap-legend">
+                                <span>-1.0</span>
+                                <div class="legend-bar"></div>
+                                <span>+1.0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card flex-1">
+                        <div class="card-header">
+                            <h3>Calibration Curves</h3>
+                            <p>Observed vs predicted probability (Brier in legend).</p>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-calibration"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>HD Prediction Forecasting Engine — research/educational use only. Not a clinical diagnostic tool.</p>
+        </footer>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
