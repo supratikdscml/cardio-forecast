@@ -1,10 +1,10 @@
 # HD Prediction Forecasting Engine — runtime dependencies
 # Matches packages used in HD_Prediction_Forecasting_Engine.ipynb
 
-flask
 pandas
 numpy
 scipy
 scikit-learn
 xgboost
 joblib
+streamlit
