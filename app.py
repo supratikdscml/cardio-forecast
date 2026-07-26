@@ -247,7 +247,7 @@ def plot_risk_gauge(risk_pct: float, risk_color: str, band_label: str):
             title={"text": f"Ensemble Risk Score — {band_label}", "font": {"size": 18, "color": "#94a3b8"}},
             gauge={
                 "axis": {"range": [0, 100], "tickwidth": 1, "tickcolor": "#64748b", "dtick": 25},
-                "bar": {"color": risk_color, "width": 16},
+                "bar": {"color": risk_color},
                 "bgcolor": "rgba(15, 23, 42, 0.5)",
                 "borderwidth": 1,
                 "bordercolor": "rgba(255, 255, 255, 0.1)",
