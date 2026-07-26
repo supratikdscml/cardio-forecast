@@ -167,10 +167,54 @@ unified_importance = (unified_importance / unified_importance.sum()).sort_values
 corr_df = pd.get_dummies(X, columns=onehot_cols, drop_first=False)
 corr = corr_df.corr().fillna(0)
 calibration_data = {}
+roc_data = {}
+cost_data = {}
+
+from sklearn.metrics import roc_curve
+
 for name, mdl in tuned_models.items():
     proba = mdl.predict_proba(X_test)[:, 1]
     prob_true, prob_pred = calibration_curve(y_test, proba, n_bins=5, strategy='uniform')
     calibration_data[name] = {'prob_true': prob_true.tolist(), 'prob_pred': prob_pred.tolist()}
+    
+    fpr, tpr, _ = roc_curve(y_test, proba)
+    roc_data[name] = {
+        'fpr': fpr.tolist(),
+        'tpr': tpr.tolist(),
+        'auc': float(test_auc_tuned[name])
+    }
+    
+    # Cost curve computation (FN=3, FP=1)
+    thresholds = np.linspace(0.01, 0.99, 100)
+    costs = []
+    for t in thresholds:
+        pred_t = (proba >= t).astype(int)
+        fn_c = np.sum((y_test == 1) & (pred_t == 0))
+        fp_c = np.sum((y_test == 0) & (pred_t == 1))
+        costs.append(int(fn_c * 3 + fp_c * 1))
+    best_idx = int(np.argmin(costs))
+    cost_data[name] = {
+        'thresholds': thresholds.tolist(),
+        'costs': costs,
+        'optimal_threshold': float(thresholds[best_idx]),
+        'min_cost': costs[best_idx]
+    }
+
+cv_scores_export = {name: [float(s) for s in scores] for name, scores in cv_results.items()}
+
+feature_details = {
+    "Age": {"type": "numeric", "unit": "years", "range": "28 - 77", "desc": "Patient age in years."},
+    "Sex": {"type": "categorical", "options": ["M", "F"], "desc": "Biological sex (M: Male, F: Female)."},
+    "ChestPainType": {"type": "categorical", "options": ["TA", "ATA", "NAP", "ASY"], "desc": "TA: Typical Angina, ATA: Atypical Angina, NAP: Non-Anginal Pain, ASY: Asymptomatic."},
+    "RestingBP": {"type": "numeric", "unit": "mm Hg", "range": "80 - 200", "desc": "Resting blood pressure on admission to hospital."},
+    "Cholesterol": {"type": "numeric", "unit": "mg/dl", "range": "85 - 603", "desc": "Serum cholesterol in mg/dl."},
+    "FastingBS": {"type": "categorical", "options": [0, 1], "desc": "Fasting blood sugar > 120 mg/dl (1 = true, 0 = false)."},
+    "RestingECG": {"type": "categorical", "options": ["Normal", "ST", "LVH"], "desc": "Normal: Normal, ST: ST-T wave abnormality, LVH: Left ventricular hypertrophy."},
+    "MaxHR": {"type": "numeric", "unit": "bpm", "range": "60 - 202", "desc": "Maximum heart rate achieved during stress test."},
+    "ExerciseAngina": {"type": "categorical", "options": ["Y", "N"], "desc": "Exercise-induced angina (Y: Yes, N: No)."},
+    "Oldpeak": {"type": "numeric", "unit": "mm", "range": "-2.6 - 6.2", "desc": "ST depression induced by exercise relative to rest."},
+    "ST_Slope": {"type": "categorical", "options": ["Up", "Flat", "Down"], "desc": "Slope of the peak exercise ST segment."}
+}
 
 joblib.dump({
     'models': tuned_models, 'weights': model_weights, 'unified_importance': unified_importance,
@@ -179,12 +223,20 @@ joblib.dump({
 
 with open("models/model_metadata.json", "w") as f:
     json.dump({
-        'test_metrics': test_metrics, 'friedman_p': float(friedman_p),
+        'test_metrics': test_metrics,
+        'friedman_stat': float(friedman_stat),
+        'friedman_p': float(friedman_p),
         'holm_posthoc': posthoc_df.to_dict(orient='records'),
         'model_weights': {k: float(v) for k, v in model_weights.items()},
         'unified_importance': unified_importance.to_dict(),
         'correlation': {'columns': list(corr.columns), 'values': corr.values.tolist()},
-        'calibration': calibration_data, 'y_test': y_test.tolist()
+        'calibration': calibration_data,
+        'roc_curves': roc_data,
+        'cost_thresholds': cost_data,
+        'cv_scores': cv_scores_export,
+        'feature_details': feature_details,
+        'y_test': y_test.tolist()
     }, f, indent=2)
 
-print("Saved models/forecaster_model.joblib and models/model_metadata.json")
+print("Saved models/forecaster_model.joblib and models/model_metadata.json successfully.")
+
